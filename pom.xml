@@ -228,7 +228,7 @@
     </dependencies> 
               
     <build>
-        <finalName>Extend</finalName>
+        <finalName>PushProcess</finalName>
 
         <plugins>
            
@@ -255,10 +255,10 @@
                             <logsDirectory>logs</logsDirectory>
                             <daemons>
                                 <daemon>
-                                    <id>Extend</id>
+                                    <id>PushProcess</id>
                                     <!-- the next line is added by default if you don't have wrapperMainClass's setting -->
                                     <wrapperMainClass>org.tanukisoftware.wrapper.WrapperSimpleApp</wrapperMainClass>
-                                    <mainClass>com.tatsinktech.extend.ApplicationProcess</mainClass>
+                                    <mainClass>com.tatsinktech.push.ApplicationProcess</mainClass>
                                     <!-- <commandLineArguments> 
                                             <commandLineArgument>start</commandLineArgument> 
                                     </commandLineArguments> -->
@@ -327,7 +327,7 @@
                         <phase>package</phase>
                         <configuration>
                             <target>
-                                <mkdir dir="${project.build.directory}/daemon/jsw/Extend/log/wrapper"/>
+                                <mkdir dir="${project.build.directory}/daemon/jsw/PushProcess/log/wrapper"/>
                             </target>
                         </configuration>
                         <goals>

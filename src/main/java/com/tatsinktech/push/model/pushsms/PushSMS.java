@@ -61,17 +61,17 @@ public class PushSMS extends AbstractModel<Long> {
     @Column(name = "confirm_user_id", nullable = true)
     private String confirmUserID;
 
-    //  2019-04-16 23:00:01-07:00:00  this offer will launch  the 2019-04-16 at 11PM 
+    //  2019-04-16 23:00:01-07:00:00  SMS is validate the 2019-04-16 at 11PM 
     @Temporal(TemporalType.TIMESTAMP)
     @Column(name = "validate_time", nullable = true)
     public Date validateTime;
 
-    //  2019-04-16 23:00:01-07:00:00  this offer will launch  the 2019-04-16 at 11PM 
+    //  2019-04-16 23:00:01-07:00:00 SMS is confirm the 2019-04-16 at 11PM 
     @Temporal(TemporalType.TIMESTAMP)
     @Column(name = "confirm_time", nullable = true)
     public Date confirmteTime;
     
-     //  2019-04-16 23:00:01-07:00:00  this offer will launch  the 2019-04-16 at 11PM 
+     //  2019-04-16 23:00:01-07:00:00  this SMS will launch  the 2019-04-16 at 11PM 
     @Temporal(TemporalType.TIMESTAMP)
     @Column(name = "start_time", nullable = true)
     public Date startTime;
