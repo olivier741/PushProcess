@@ -28,9 +28,9 @@ import org.hibernate.annotations.UpdateTimestamp;
 @Setter
 @AllArgsConstructor
 @NoArgsConstructor
-@ToString 
+@ToString
 @Table(name = "push_hist")
-public class Push_Hist extends AbstractModel<Long>{
+public class Push_Hist extends AbstractModel<Long> {
 
     @Column(name = "transaction_id", nullable = false)
     private String transactionId;
@@ -38,19 +38,23 @@ public class Push_Hist extends AbstractModel<Long>{
     @Column(name = "msisdn", nullable = false)
     private String msisdn;
 
-    @Column(name = "channel", nullable = false )
+    @Column(name = "channel", nullable = false)
     private String channel;
-    
+
     @Column(name = "push_name", nullable = false)
     private String pushName;
-        
+    
+    @Column(name = "product_code", nullable = false)
+    private String productCode;
+
     @Column(name = "operator")
     private String operator;
+
+
 
     @UpdateTimestamp
     @Column(name = "process_time")
     private Timestamp processTime;
-
 
     @Column(name = "status")
     private int status;
@@ -60,7 +64,7 @@ public class Push_Hist extends AbstractModel<Long>{
 
     @Column(name = "Ip_address")
     private String IpAddress;
-      
+
     @Column(name = "service_name", nullable = false)
     private String serviceName;
 }

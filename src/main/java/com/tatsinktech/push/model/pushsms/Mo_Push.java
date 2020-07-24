@@ -46,6 +46,9 @@ public class Mo_Push extends AbstractModel<Long>{
     @Column(name = "operator",nullable = false)
     private String operator;
     
+    @Column(name = "product_code",nullable = false)
+    private String productCode;
+        
     @Column(name = "service_name",nullable = false)
     private String service_name;
     
