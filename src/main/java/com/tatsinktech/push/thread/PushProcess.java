@@ -5,30 +5,24 @@
  */
 package com.tatsinktech.push.thread;
 
-import com.tatsinktech.process.kafka.service.MyKafkaProducer;
-import com.tatsinktech.process.model.register.Notification_Conf;
-import com.tatsinktech.process.beans.Message_Exchg;
-import com.tatsinktech.process.beans.Process_Request;
-import com.tatsinktech.process.config.Load_Configuration;
-import com.tatsinktech.process.model.register.Mt_Hist;
-import com.tatsinktech.push.model.repository.Mt_HistRepository;
-import com.tatsinktech.process.util.ConverterXML_JSON;
+import com.tatsinktech.push.config.Load_Configuration;
+import com.tatsinktech.push.kafka.service.MyKafkaProducer;
+import com.tatsinktech.push.model.pushsms.Mo_Push;
+import com.tatsinktech.push.model.repository.Mo_PushRepository;
+import com.tatsinktech.push.util.Utils;
 import java.net.InetAddress;
-import java.net.UnknownHostException;
 import java.sql.Timestamp;
-import java.util.Arrays;
-import java.util.HashMap;
+import java.util.Date;
 import java.util.List;
-import java.util.Map;
-import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ExecutorService;
 import javax.annotation.PostConstruct;
-import org.apache.commons.lang.StringUtils;
 import org.codehaus.jettison.json.JSONException;
 import org.codehaus.jettison.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Component;
 
 /**
@@ -40,153 +34,70 @@ public class PushProcess implements Runnable {
 
     Logger logger = LoggerFactory.getLogger(this.getClass().getName());
 
-    private HashMap<String, Notification_Conf> notification;
-    private int sleep_duration;
-    private HashMap<String, String> SETVARIABLE;
-    private InetAddress address;
+    private static int sleep_duration;
+    private static int number_thread;
+    private static int maxRow;
+    private static InetAddress address;
 
-    private static BlockingQueue<Process_Request> send_queue;
+    private int threadID;
 
     @Autowired
     private Load_Configuration commonConfig;
 
     @Autowired
-    private MyKafkaProducer myKafkaProducer;
+    private Mo_PushRepository moPushRepo;
 
     @Autowired
-    private Mt_HistRepository mthistRepo;
-
- 
+    private MyKafkaProducer myKafkaProducer;
 
     @PostConstruct
     private void init() {
-        this.notification = commonConfig.getSETNOTIFICATION();
-        this.sleep_duration = Integer.parseInt(commonConfig.getApplicationSenderSleepDuration());
-        address = gethostName();
+        PushProcess.sleep_duration = Integer.parseInt(commonConfig.getApplicationPushSleepDuration());
+        PushProcess.number_thread = Integer.parseInt(commonConfig.getApplicationPushNumberThread());
+        PushProcess.maxRow = Integer.parseInt(commonConfig.getApplicationPushMaxMoRow());
+        PushProcess.address = Utils.gethostName();
     }
 
-    public static void setSend_queue(BlockingQueue<Process_Request> send_queue) {
-        PushProcess.send_queue = send_queue;
+    public int getThreadID() {
+        return threadID;
+    }
+
+    public void setThreadID(int threadID) {
+        this.threadID = threadID;
     }
 
     @Override
     public void run() {
 
-        logger.info("################################## START SENDER ###########################");
-        List<String> listLebelNotif = Arrays.asList("REG-PRODUCT-NOT-EXIST",
-                "CHECK-PRODUCT-NOT-EXIST",
-                "DEL-PRODUCT-NOT-EXIST",
-                "GUIDE-PRODUCT-NOT-EXIST",
-                "RECEIVER-ACTION-NOT-DEFINE",
-                "RECEIVER-NOT-ACTION-TYPE",
-                "RECEIVER-WRONG-SYNTAX"
-        );
+        logger.info("################################## START PROCESS EXTEND ###########################");
         while (true) {
             // Removing an element from the Queue using poll()
             // The poll() method returns null if the Queue is empty.
-            Process_Request process_mo = null;
-            try {
-                //consuming messages 
-                synchronized (this) {
-                    logger.info("Sender Queue size :" + send_queue.size());
-                    process_mo = send_queue.take();
-                }
-                logger.info("Get message in the sender queue :" + process_mo);
 
-            } catch (InterruptedException e) {
-                logger.error("Error to Get in reg_queue :" + process_mo, e);
-            }
+            PageRequest pageable = PageRequest.of(0, maxRow, Sort.Direction.ASC, "id");
+            int passage = 0;
+            logger.info("################ START PROCESS MO BY " + Thread.currentThread().getName() + "###############");
+            if (number_thread < 2) {
 
-            if (process_mo != null) {
+                List<Mo_Push> listMo_Push = moPushRepo.findMoPush(pageable);
 
-                String transactionid = process_mo.getTransaction_id();
-                String receiver = process_mo.getMsisdn();
-                String nofif_code = process_mo.getNotificationCode();
-                String sender = process_mo.getSendChannel().trim().toUpperCase();
+                if (listMo_Push != null && !listMo_Push.isEmpty()) {
+                    passage = 1;
+                    processPush(listMo_Push);
 
-                if (listLebelNotif.contains(nofif_code)) {
-                    Notification_Conf notif_conf_chanel = notification.get("DEFAULT-CHANNEL");
-                    if (!StringUtils.isBlank(notif_conf_chanel.getNotificationValue())) {
-                        sender = notif_conf_chanel.getNotificationValue();
-                    }
-                }
-
-                String message = nofif_code;
-                SETVARIABLE = process_mo.getSetvariable();
-                if (!StringUtils.isBlank(nofif_code)) {
-                    Notification_Conf notif_conf = notification.get(nofif_code);
-                    JSONObject jsonObject = new JSONObject();
-
-                    if (notif_conf != null) {
-                        message = notif_conf.getNoficationName();
-                        if (notif_conf.getNotificationValue() != null) {
-                            message = notif_conf.getNotificationValue();
-                        }
-
-                        if (SETVARIABLE != null && !SETVARIABLE.isEmpty()) {
-                            for (Map.Entry<String, String> variable : SETVARIABLE.entrySet()) {
-                                if (variable.getValue() != null) {
-                                    message = message.replace(variable.getKey(), variable.getValue());
-                                }
-                            }
-                        }
-
-                        try {
-                            jsonObject.put("transaction_id", transactionid);
-                            jsonObject.put("service_id", process_mo.getServiceName());
-                            jsonObject.put("message_id", "message_1");
-                            jsonObject.put("sender", sender);
-                            jsonObject.put("receiver", receiver);
-                            jsonObject.put("content", message);
-                            jsonObject.put("exchange_mode", "SENDER");
-
-                        } catch (JSONException e) {
-                            logger.error(e.getMessage());
-                        }
-                        logger.info("Msisdn :" + receiver + " --> Channel : " + sender + " --> Notification Code : " + nofif_code + " --> Message :  " + message);
-                    } else {
-                        try {
-                            jsonObject.put("transaction_id", transactionid);
-                            jsonObject.put("service_id", process_mo.getServiceName());
-                            jsonObject.put("message_id", "message_1");
-                            jsonObject.put("sender", sender);
-                            jsonObject.put("receiver", receiver);
-                            jsonObject.put("content", message);
-                            jsonObject.put("exchange_mode", "SENDER");
-
-                        } catch (JSONException e) {
-                            logger.error(e.getMessage());
-                        }
-
-                        logger.warn("Msisdn :" + receiver + " --> Channel : " + sender + " --> Notification Code : " + nofif_code + " --> Message Not provide in DB");
-                    }
-                    myKafkaProducer.sendDataToKafka(jsonObject.toString());
                 } else {
-                    logger.warn("Msisdn :" + receiver + " --> Channel : " + sender + " --> Not Notification Code  Provided ");
+                    logger.info("---------> MO_PUSH TABLE IS EMPTY");
                 }
-                Timestamp sendTime = new Timestamp(System.currentTimeMillis());
-                Mt_Hist mtHist = new Mt_Hist();
-                mtHist.setMsisdn(receiver);
-                mtHist.setChannel(sender);
-                mtHist.setCommandCode(process_mo.getCommanCode().trim().toUpperCase());
-                mtHist.setCommandName(process_mo.getCommandName().trim().toUpperCase());
-                mtHist.setDescription(process_mo.getNotificationCode());
-                mtHist.setIpAddress(address.getHostName() + "@" + address.getHostAddress());
-                mtHist.setMessage(message);
-                if (process_mo.getParamName() != null) {
-                    mtHist.setParamName(process_mo.getParamName().trim().toUpperCase());
-                }
-                mtHist.setProcessUnit("Sender");
-                mtHist.setProductCode(process_mo.getProductCode().trim().toUpperCase());
-                mtHist.setReceiveTime(process_mo.getReceiveTime());
-                mtHist.setSendTime(sendTime);
-                mtHist.setServiceName(process_mo.getServiceName().trim().toUpperCase());
-                mtHist.setTransactionId(process_mo.getTransaction_id());
-
-                mthistRepo.save(mtHist);
 
             } else {
-                logger.warn("Process Request is NULL ");
+                List<Mo_Push> listMo_Push = moPushRepo.findMoPush_Thread(number_thread, threadID, pageable);
+                if (listMo_Push != null && !listMo_Push.isEmpty()) {
+                    passage = 1;
+                    processPush(listMo_Push);
+
+                } else {
+                    logger.info("---------> MO_PUSH TABLE IS EMPTY");
+                }
             }
 
             try {
@@ -195,19 +106,40 @@ public class PushProcess implements Runnable {
             }
 
         }
-
     }
 
-    private InetAddress gethostName() {
+    private void processPush(List<Mo_Push> listMoPush) {
+        JSONObject jsonObject = new JSONObject();
 
-        InetAddress addr = null;
+        logger.info("#################### PROCESS MO_PUSH Size = " + listMoPush.size() + " ##################");
+        for (Mo_Push mo : listMoPush) {
 
-        try {
-            addr = InetAddress.getLocalHost();
-        } catch (UnknownHostException ex) {
-            logger.error("Hostname can not be resolved", ex);
+            String msisdn = mo.getMsisdn();
+            String transactionid = mo.getTransactionId();
+            String channel = mo.getSendChannel();
+            String pushName = mo.getPushName();
+            String productCode = mo.getProductCode();
+            String message = mo.getMessage();
+            String operator = mo.getOperator();
+            String serviceName = mo.getServiceName();
+
+            Timestamp receive_time = new Timestamp((new Date()).getTime());
+
+            try {
+                jsonObject.put("transaction_id", transactionid);
+                jsonObject.put("service_id", serviceName);
+                jsonObject.put("message_id", "message_1");
+                jsonObject.put("sender", channel);
+                jsonObject.put("receiver", msisdn);
+                jsonObject.put("content", message);
+                jsonObject.put("exchange_mode", "PUSH");
+            } catch (JSONException e) {
+                logger.error(e.getMessage());
+            }
+            logger.info("Msisdn :" + msisdn + " --> Channel : " + channel + " --> Message :  " + message);
+
+            myKafkaProducer.sendDataToKafka(jsonObject.toString());
         }
-        return addr;
     }
 
     public static void executeRunnables(final ExecutorService service, List<Runnable> runnables) {

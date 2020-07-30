@@ -29,12 +29,17 @@ public class Load_Configuration implements Serializable {
     @Value("${application.push.sleep-duration}")
     private String applicationPushSleepDuration;
 
+    @Value("${application.push.mo-maxRow}")
+    private String applicationPushMaxMoRow;
+
+    @Value("${application.push.scheduler-fixedDelay}")
+    private Integer applicationPushFixeDelay;
+
+    @Value("${application.push.scheduler-poolSize}")
+    private Integer applicationPushPoolSize;
 
     @Value("${spring.kafka.producer.topic}")
     private String producer_topic;
-
-    @Value("${spring.kafka.consumer.topic}")
-    private String consumer_topic;
 
     @Value("${spring.kafka.zookeeper.host}")
     private String zookeeperHosts;
@@ -63,13 +68,8 @@ public class Load_Configuration implements Serializable {
         return applicationPushSleepDuration;
     }
 
-
     public String getProducer_topic() {
         return producer_topic;
-    }
-
-    public String getConsumer_topic() {
-        return consumer_topic;
     }
 
     public String getZookeeperHosts() {
@@ -92,5 +92,18 @@ public class Load_Configuration implements Serializable {
         return connectionTimeOutInMs;
     }
 
-   
+    public Integer getApplicationPushFixeDelay() {
+        return applicationPushFixeDelay;
+    }
+
+    public Integer getApplicationPushPoolSize() {
+        return applicationPushPoolSize;
+    }
+
+    public String getApplicationPushMaxMoRow() {
+        return applicationPushMaxMoRow;
+    }
+
+    
+    
 }

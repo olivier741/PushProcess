@@ -30,8 +30,12 @@ import lombok.ToString;
 @ToString
 @Table(name = "mo_push")
 public class Mo_Push extends AbstractModel<Long>{
+    
     @Column(name = "channel",nullable = false)
-    private String channel;
+    private String sendChannel;
+    
+    @Column(name = "transaction_id")
+    private String transactionId;
     
     @Column(name = "msisdn",nullable = false)
     private String msisdn;
@@ -50,7 +54,7 @@ public class Mo_Push extends AbstractModel<Long>{
     private String productCode;
         
     @Column(name = "service_name",nullable = false)
-    private String service_name;
+    private String serviceName;
     
     
 }

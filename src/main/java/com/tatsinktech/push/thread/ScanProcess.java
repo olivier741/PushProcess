@@ -5,28 +5,35 @@
  */
 package com.tatsinktech.push.thread;
 
-import java.sql.Timestamp;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
-import org.apache.commons.lang.StringUtils;
-import org.codehaus.jettison.json.JSONException;
-import org.codehaus.jettison.json.JSONObject;
+import com.tatsinktech.push.config.Load_Configuration;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.Date;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
+import com.tatsinktech.push.model.repository.Mo_PushRepository;
 
 /**
  *
  * @author olivier.tatsinkou
  */
 @Component
-public class ScanProcess implements Runnable{
-    
-    
-    
-    @Override
-    public void run() {
+public class ScanProcess {
 
-      
+    private Logger logger = LoggerFactory.getLogger(this.getClass().getName());
+    private static final DateTimeFormatter dateTimeFormatter = DateTimeFormatter.ofPattern("HH:mm:ss");
 
+    private static int val = 0;
+
+    @Autowired
+    private Mo_PushRepository loadRepo;
+
+    @Scheduled(fixedDelayString  = "${application.push.scheduler-fixedDelay}")
+    public void scheduleTaskWithFixedDelay() {
+        logger.info("############## LOAD MO_PUSH #########################");
+        loadRepo.loadMoPush(new Date());
     }
 }

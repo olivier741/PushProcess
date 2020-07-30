@@ -33,7 +33,6 @@ public class ApplicationLaucher implements InitializingBean {
     @Autowired
     ConfigurableApplicationContext ConfAppContext;
 
-
     @Override
     public void afterPropertiesSet() throws Exception {
         logger.info("******************* InitializingBean *******************************");
@@ -50,7 +49,8 @@ public class ApplicationLaucher implements InitializingBean {
         }
         ExecutorService push_Execute = Executors.newFixedThreadPool(pushProcess_pool);
         PushProcess.executeRunnables(push_Execute, pushProcess_runnables);
-       
+
     }
+
 
 }
